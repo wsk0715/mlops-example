@@ -30,7 +30,7 @@ const name = ref('')
 onMounted(() => projectsStore.fetch())
 
 async function create() {
-  await projectsStore.create(name.value, '', '')
+  await projectsStore.create(name.value, '')
   dialog.value = false
   name.value = ''
 }
