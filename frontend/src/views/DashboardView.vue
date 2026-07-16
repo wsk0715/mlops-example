@@ -12,7 +12,6 @@
       <v-card title="New Project">
         <v-card-text>
           <v-text-field v-model="name" label="Project name" />
-          <v-text-field v-model="teamId" label="Team ID" />
           <v-btn @click="create" color="primary">Create</v-btn>
         </v-card-text>
       </v-card>
@@ -27,7 +26,6 @@ import { useProjectsStore } from '../stores/projects'
 const projectsStore = useProjectsStore()
 const dialog = ref(false)
 const name = ref('')
-const teamId = ref('')
 
 onMounted(() => projectsStore.fetch())
 
