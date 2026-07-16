@@ -2,10 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
 
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.project import Project
+from app.models.team import Team, TeamMember
+from app.models.team import TeamRole
 from app.models.user import User
 from app.schemas.common import PaginatedResponse
 
@@ -15,7 +18,7 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 class ProjectCreate(BaseModel):
     name: str
     description: str | None = None
-    team_id: str
+    team_id: UUID | None = None
 
 
 @router.post("", status_code=201)
@@ -24,12 +27,24 @@ async def create(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    proj = Project(
-        name=body.name,
-        description=body.description,
-        team_id=body.team_id,
-        created_by=user.id,
-    )
+    team_id = body.team_id
+    if not team_id:
+        team = await db.execute(
+            select(Team).join(TeamMember).where(
+                TeamMember.user_id == user.id,
+                TeamMember.role == TeamRole.owner,
+            )
+        )
+        team = team.scalar_one_or_none()
+        if not team:
+            team = Team(name=f"{user.username}'s Team", owner_id=user.id)
+            db.add(team)
+            await db.flush()
+            db.add(TeamMember(team_id=team.id, user_id=user.id, role=TeamRole.owner))
+            await db.flush()
+        team_id = team.id
+
+    proj = Project(name=body.name, description=body.description, team_id=team_id, created_by=user.id)
     db.add(proj)
     await db.commit()
     await db.refresh(proj)
