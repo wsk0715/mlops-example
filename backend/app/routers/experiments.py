@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
 
 from app.database import get_db
 from app.dependencies import get_current_user
@@ -12,7 +13,7 @@ router = APIRouter(prefix="/experiments", tags=["experiments"])
 
 
 class ExperimentCreate(BaseModel):
-    project_id: str
+    project_id: UUID
     name: str
     description: str | None = None
     params: dict[str, str] = {}
