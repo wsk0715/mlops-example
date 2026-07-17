@@ -18,8 +18,9 @@
     <v-dialog v-model="dialog" max-width="500">
       <v-card title="Upload Dataset">
         <v-card-text>
-          <v-text-field v-model="name" label="Name" />
-          <v-text-field v-model="classNames" label="Classes (comma separated)" />
+          <v-text-field v-model="name" label="Dataset name" placeholder="e.g. chess-pieces" />
+          <v-text-field v-model="version" label="Version" placeholder="v1" />
+          <v-text-field v-model="classNames" label="Classes (comma separated)" placeholder="king,queen,bishop,knight,rook,pawn" />
           <v-file-input v-model="files" label="ZIP file" accept=".zip" />
           <v-btn @click="upload" color="primary">Upload</v-btn>
         </v-card-text>
@@ -36,8 +37,9 @@ const props = defineProps<{ projectId: string }>()
 const datasetsStore = useDatasetsStore()
 const dialog = ref(false)
 const name = ref('')
+const version = ref('v1')
 const classNames = ref('')
-const files = ref<File[]>([])
+const files = ref<File | null>(null)
 
 onMounted(() => datasetsStore.fetch(props.projectId))
 
@@ -45,11 +47,13 @@ async function upload() {
   const fd = new FormData()
   fd.append('name', name.value)
   fd.append('project_id', props.projectId)
+  fd.append('version', version.value)
   fd.append('class_names', classNames.value)
-  if (files.value[0]) fd.append('files', files.value[0])
+  if (files.value) fd.append('files', files.value)
   await datasetsStore.upload(fd)
   dialog.value = false
   name.value = ''
+  version.value = 'v1'
   classNames.value = ''
 }
 </script>

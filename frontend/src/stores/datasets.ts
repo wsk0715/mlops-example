@@ -9,9 +9,7 @@ export const useDatasetsStore = defineStore('datasets', {
       this.datasets = data.items
     },
     async upload(formData: FormData) {
-      const { data } = await api.post('/datasets', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      const { data } = await api.post('/datasets', formData)
       this.datasets.push(data)
     },
     async getById(id: string) {
