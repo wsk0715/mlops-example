@@ -8,8 +8,8 @@ export const useProjectsStore = defineStore('projects', {
       const { data } = await api.get('/projects')
       this.projects = data.items
     },
-    async create(name: string, description: string, team_id: string) {
-      const { data } = await api.post('/projects', { name, description, team_id })
+    async create(name: string, description: string, team_id?: string) {
+      const { data } = await api.post('/projects', { name, description })
       this.projects.push(data)
     },
     async getById(id: string) {
