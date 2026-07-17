@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
 
 from app.database import get_db
 from app.dependencies import get_current_user
@@ -17,6 +18,7 @@ async def create(
     name: str = Form(...),
     project_id: str = Form(...),
     class_names: str = Form(""),
+    version: str = Form("v1"),
     annotation_format: str = Form("yolo_txt"),
     files: list[UploadFile] = File(...),
     db: AsyncSession = Depends(get_db),
@@ -33,25 +35,34 @@ async def create(
     await db.flush()
     await db.refresh(ds)
 
-    image_count = handle_upload(files, ds.id, cls_list, annotation_format)
+    r2_key = f"{project_id}/datasets/{name}/{name}_{version}.zip"
+    image_count = handle_upload(files, r2_key)
 
-    version = DatasetVersion(
+    ver = DatasetVersion(
         dataset_id=ds.id,
         version=1,
         image_count=image_count,
         annotation_format=annotation_format,
-        r2_prefix=f"datasets/{ds.id}/v1/",
+        r2_prefix=r2_key,
         created_by=user.id,
     )
-    db.add(version)
+    db.add(ver)
     await db.commit()
     await db.refresh(ds)
-    return ds
+    return {
+        "id": ds.id,
+        "name": ds.name,
+        "project_id": ds.project_id,
+        "class_names": ds.class_names,
+        "created_by": ds.created_by,
+        "created_at": ds.created_at,
+        "version": {"id": ver.id, "version": ver.version, "image_count": ver.image_count},
+    }
 
 
 @router.get("")
 async def list(
-    project_id: str,
+    project_id: UUID,
     page: int = 1,
     size: int = 20,
     db: AsyncSession = Depends(get_db),
@@ -68,7 +79,7 @@ async def list(
 
 
 @router.get("/{id}")
-async def get(id: str, db: AsyncSession = Depends(get_db)):
+async def get(id: UUID, db: AsyncSession = Depends(get_db)):
     ds = await db.get(Dataset, id)
     if not ds:
         raise HTTPException(status_code=404)
@@ -92,5 +103,6 @@ async def download(id: str, vId: str, db: AsyncSession = Depends(get_db)):
     ver = await db.get(DatasetVersion, vId)
     if not ver:
         raise HTTPException(status_code=404)
-    url = storage.get_signed_url(f"{ver.r2_prefix}data.yaml")
-    return {"signed_url": url, "filename": f"dataset_v{ver.version}.zip"}
+    url = storage.get_signed_url(ver.r2_prefix)
+    filename = ver.r2_prefix.rsplit("/", 1)[-1]
+    return {"signed_url": url, "filename": filename}
