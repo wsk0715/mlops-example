@@ -1,4 +1,30 @@
-ref/
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
 
-*.env*
+# Environment
+.env*
 !.env.example
+.python-version
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Train artifacts
+train/dataset.zip
+train/yolo/runs/
+
+# Ref docs
+ref/
