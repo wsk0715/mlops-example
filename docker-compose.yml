@@ -17,9 +17,11 @@ services:
 
   api:
     build: ./backend
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    command: sh -c "pip install -e . && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend:/app
     environment:
       DATABASE_URL: postgresql+asyncpg://mlops:${POSTGRES_PASSWORD:-mlops}@postgres:5432/mlops
       SECRET_KEY: ${SECRET_KEY}
@@ -27,7 +29,7 @@ services:
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
       R2_BUCKET_NAME: ${R2_BUCKET_NAME}
-      FRONTEND_URL: http://localhost:3000
+      FRONTEND_URL: http://localhost:5173
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,9 +37,16 @@ services:
       - mlops-network
 
   frontend:
-    build: ./frontend
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
     ports:
-      - "3000:80"
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      API_URL: http://api:8000
     depends_on:
       - api
     networks:

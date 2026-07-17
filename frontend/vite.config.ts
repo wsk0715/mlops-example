@@ -4,9 +4,10 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   plugins: [vue()],
   server: {
-    port: 3000,
+    port: 5173,
+    host: true,
     proxy: {
-      '/api': { target: 'http://localhost:8000', changeOrigin: true }
+      '/api': { target: process.env.API_URL || 'http://localhost:8000', changeOrigin: true }
     }
   }
 })
